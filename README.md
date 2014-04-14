@@ -17,7 +17,7 @@ Distinguishing features include:
 
 ## Installation
 
-Via [https://clojars.org/verschlimmbesserung](Clojars), as usual.
+Via [Clojars](https://clojars.org/verschlimmbesserung), as usual.
 
 ## Usage
 
