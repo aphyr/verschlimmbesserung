@@ -148,7 +148,7 @@ Character encodings work like you'd expect. Let's create a unique key under
 ```clj
 user=> (v/create! c "物理学" "学生")
 "/物理学/1530"
-user=> (v/get c ["物理学" 1656])
+user=> (v/get c ["物理学" 1530])
 "学生"
 ```
 
