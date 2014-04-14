@@ -93,6 +93,18 @@ user=> (v/swap! c :atom str " says the cat")
 "meow says the cat says the cat"
 ```
 
+U-U-U-U-ULTRA PARALLEL
+
+```clj
+user=> (v/reset! c :counter "0")
+{:action "set", :node {:key "/counter", :value "0", :modifiedIndex 2229, :createdIndex 2229}}
+user=> (->> (range 100)
+            (map #(future % (v/swap! c :counter (comp inc read-string))))
+            doall
+            (map deref))
+(36 68 70 33 2 12 34 24 59 46 60 7 94 9 45 48 86 44 57 92 99 93 87 52 50 78 61 80 38 20 53 13 11 39 66 28 41 89 58 21 79 69 43 8 90 84 77 19 47 95 15 55 83 91 98 49 73 22 32 3 72 76 82 4 40 65 96 37 97 63 29 25 35 88 64 85 10 17 27 26 1 100 23 62 75 6 42 30 18 16 74 51 56 31 67 81 71 14 5 54)
+```
+
 Delete the node with `delete!`
 
 ```clj
