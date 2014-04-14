@@ -15,6 +15,10 @@ Distinguishing features include:
 - Directories as (possibly nested) maps, etc
 - Comprehensive docstrings
 
+## Installation
+
+Via [https://clojars.org/verschlimmbesserung](Clojars), as usual.
+
 ## Usage
 
 Require the library and define a client.
