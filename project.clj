@@ -1,4 +1,4 @@
-(defproject verschlimmbesserung "0.1.0-SNAPSHOT"
+(defproject verschlimmbesserung "0.1.0"
   :description "An etcd client."
   :url "https://github.com/aphyr/verschlimmbesserung"
   :license {:name "Eclipse Public License"
