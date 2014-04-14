@@ -1,7 +1,8 @@
 # Verschlimmbesserung
 
-A Raft client, built to address the needs of Jepsen, and probably other systems
-too. Uses the HTTP v2 protocol. Distinguishing features include:
+An Etcd client for modern Clojure systems, built to address the needs of
+Jepsen, and probably other systems too. Uses the HTTP v2 protocol.
+Distinguishing features include:
 
 - Explicit client objects
 - Explicit option maps, not kwargs, for ease of composition
