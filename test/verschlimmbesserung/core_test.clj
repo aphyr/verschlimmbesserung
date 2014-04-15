@@ -95,13 +95,13 @@
                               (+ (read-string a) b c)) 1 2)))
   (is (= "3" (v/get c :atom))))
 
-(deftest swap-aggressive-test
-  (v/reset! c :atom "0")
-  (->> (range 100)
-       (map #(future % (v/swap! c :atom (comp inc read-string))))
-       doall
-       (map deref)
-       sort
-       (= (range 1 101))
-       is)
-  (is (= "100" (v/get c :atom {:consistent? true}))))
+;(deftest swap-aggressive-test
+;  (v/reset! c :atom "0")
+;  (->> (range 100)
+;       (map #(future % (v/swap! c :atom (comp inc read-string))))
+;       doall
+;       (map deref)
+;       sort
+;       (= (range 1 101))
+;       is)
+;  (is (= "100" (v/get c :atom {:consistent? true}))))

@@ -130,10 +130,9 @@
   :timeout is used for the socket and connection timeout. Remaining options are
   passed as query params."
   [client opts]
-  {:throw-exceptions?     true
+  {:as                    :string
+   :throw-exceptions?     true
    :throw-entire-message? true
-   :coerce                :always
-   :as                    :json
    :follow-redirects      true
    :force-redirects       true ; Etcd uses 307 for side effects like PUT
    :socket-timeout        (or (:timeout opts) (:timeout client))
@@ -146,15 +145,21 @@
   response's body."
   [response]
   (when-not (:body response)
-    (throw+ {:error    "No body in response"
+    (throw+ {:type     ::missing-body
              :response response}))
-  (let [h (:headers response)]
-    (with-meta (:body response)
-               {:status           (:status response)
-                :leader-peer-url  (core/get h "x-leader-peer-url")
-                :etcd-index       (core/get h "x-etcd-index")
-                :raft-index       (core/get h "x-raft-index")
-                :raft-term        (core/get h "x-raft-term")})))
+
+  (try+
+    (let [body (-> response :body (json/parse-string true))
+          h    (:headers response)]
+      (with-meta body
+                 {:status           (:status response)
+                  :leader-peer-url  (core/get h "x-leader-peer-url")
+                  :etcd-index       (core/get h "x-etcd-index")
+                  :raft-index       (core/get h "x-raft-index")
+                  :raft-term        (core/get h "x-raft-term")}))
+    (catch com.fasterxml.jackson.core.JsonParseException e
+      (throw+ {:type     ::invalid-json-response
+               :response response}))))
 
 (defmacro parse
   "Parses regular responses using parse-resp, but also rewrites slingshot
@@ -162,10 +167,15 @@
   response up to the top level and merging in the http :status."
   [expr]
   `(try+
-     (parse-resp ~expr)
-     (catch (and (:body ~'%) (:status ~'%)) {:keys [:body :status]}
-       ; etcd is quite helpful with its error messages, so we just use the body.
-       (throw+ (assoc ~'body :status ~'status)))))
+     (let [r# (parse-resp ~expr)]
+       r#)
+     (catch (and (:body ~'%) (:status ~'%)) {:keys [:body :status] :as e#}
+       ; etcd is quite helpful with its error messages, so we just use the body
+       ; as JSON if possible.
+       (try (let [body# (json/parse-string ~'body true)]
+              (throw+ (assoc body# :status ~'status)))
+            (catch com.fasterxml.jackson.core.JsonParseException e#
+              (throw+ e#))))))
 
 (declare node->value)
 
@@ -329,7 +339,8 @@
    (cas! client key value value' {}))
   ([client key value value' opts]
    (try+
-     (->> (assoc opts :prevValue  value
+     (->> (assoc opts
+                 :prevValue  value
                  :value      value')
           (remap-keys {:prev-index  :prevIndex
                        :prev-exist? :prevExist})
@@ -353,7 +364,8 @@
    (cas-index! client key index value' {}))
   ([client key index value' opts]
    (try+
-     (->> (assoc opts :prevIndex  index
+     (->> (assoc opts
+                 :prevIndex  index
                  :value      value')
           (remap-keys {:prev-value  :prevValue
                        :prev-exist? :prevExist})
