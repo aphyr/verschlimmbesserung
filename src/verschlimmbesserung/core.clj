@@ -134,6 +134,8 @@
    :throw-entire-message? true
    :coerce                :always
    :as                    :json
+   :follow-redirects      true
+   :force-redirects       true ; Etcd uses 307 for side effects like PUT
    :socket-timeout        (or (:timeout opts) (:timeout client))
    :conn-timeout          (or (:timeout opts) (:timeout client))
    :query-params          (dissoc opts :timeout)})
@@ -143,6 +145,9 @@
   X-headers as metadata (:etcd-index, :raft-index, :raft-term) on the
   response's body."
   [response]
+  (when-not (:body response)
+    (throw+ {:error    "No body in response"
+             :response response}))
   (let [h (:headers response)]
     (with-meta (:body response)
                {:status           (:status response)
