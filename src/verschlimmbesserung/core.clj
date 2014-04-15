@@ -29,8 +29,9 @@
             [clj-http.util          :as http.util]
             [cheshire.core          :as json]
             [slingshot.slingshot    :refer [try+ throw+]])
-  (:import (clojure.lang MapEntry)))
-
+  (:import (com.fasterxml.jackson.core JsonParseException)
+           (java.io InputStream)
+           (clojure.lang MapEntry)))
 
 (def api-version "v2")
 
@@ -149,7 +150,10 @@
              :response response}))
 
   (try+
-    (let [body (-> response :body (json/parse-string true))
+    (let [body (:body response)
+          body (if (instance? InputStream body)
+                 (json/parse-stream body true)
+                 (json/parse-string body true))
           h    (:headers response)]
       (with-meta body
                  {:status           (:status response)
@@ -157,7 +161,7 @@
                   :etcd-index       (core/get h "x-etcd-index")
                   :raft-index       (core/get h "x-raft-index")
                   :raft-term        (core/get h "x-raft-term")}))
-    (catch com.fasterxml.jackson.core.JsonParseException e
+    (catch JsonParseException e
       (throw+ {:type     ::invalid-json-response
                :response response}))))
 
@@ -174,7 +178,7 @@
        ; as JSON if possible.
        (try (let [body# (json/parse-string ~'body true)]
               (throw+ (assoc body# :status ~'status)))
-            (catch com.fasterxml.jackson.core.JsonParseException e#
+            (catch JsonParseException _#
               (throw+ e#))))))
 
 (declare node->value)
