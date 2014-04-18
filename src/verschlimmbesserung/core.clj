@@ -25,6 +25,7 @@
   (:require [clojure.core           :as core]
             [clojure.core.reducers  :as r]
             [clojure.string         :as str]
+            [clojure.java.io        :as io]
             [clj-http.client        :as http]
             [clj-http.util          :as http.util]
             [cheshire.core          :as json]
@@ -140,6 +141,13 @@
    :conn-timeout          (or (:timeout opts) (:timeout client))
    :query-params          (dissoc opts :timeout)})
 
+(defn parse-json
+  "Parse an inputstream or string as JSON"
+  [str-or-stream]
+  (if (instance? InputStream str-or-stream)
+    (json/parse-stream (io/reader str-or-stream) true)
+    (json/parse-string str-or-stream true)))
+
 (defn parse-resp
   "Takes a clj-http response, extracts the body, and assoc's status and Raft
   X-headers as metadata (:etcd-index, :raft-index, :raft-term) on the
@@ -150,10 +158,7 @@
              :response response}))
 
   (try+
-    (let [body (:body response)
-          body (if (instance? InputStream body)
-                 (json/parse-stream body true)
-                 (json/parse-string body true))
+    (let [body (parse-json (:body response))
           h    (:headers response)]
       (with-meta body
                  {:status           (:status response)
@@ -176,7 +181,7 @@
      (catch (and (:body ~'%) (:status ~'%)) {:keys [:body :status] :as e#}
        ; etcd is quite helpful with its error messages, so we just use the body
        ; as JSON if possible.
-       (try (let [body# (json/parse-string ~'body true)]
+       (try (let [body# (parse-json ~'body)]
               (throw+ (assoc body# :status ~'status)))
             (catch JsonParseException _#
               (throw+ e#))))))
