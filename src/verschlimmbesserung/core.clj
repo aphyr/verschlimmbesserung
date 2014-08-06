@@ -286,7 +286,7 @@
   ([client path value opts]
    (->> (assoc opts :value value)
         (http-opts client)
-        (http/post (key-url client path))
+        (http/put (key-url client path))
         parse)))
 
 (defn create!
