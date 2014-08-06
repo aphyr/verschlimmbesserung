@@ -101,14 +101,16 @@
 (defn key-url
   "The URL for a particular key.
 
-  (key-url client \"foo\") ; => \"http://127.0.0.1:4001/v2/foo"
-  [client key]
-  (let [key  (encode-key key)
-        path (if (and (pos? (.length key))
-                      (= \/ (.charAt key 0)))
-              (str "/keys" key)
-              (str "/keys/" key))]
-    (str (base-url client) path)))
+  (key-url client \"foo\") ; => \"http://127.0.0.1:4001/v2/keys/foo"
+  ([client key root-key]
+     (let [key  (encode-key key)
+           path (if (and (pos? (.length key))
+                         (= \/ (.charAt key 0)))
+                  (str "/" root-key key)
+                  (str "/" root-key "/" key))]
+       (str (base-url client) path)))
+  ([client key]
+     (key-url client key "keys")))
 
 (defn remap-keys
   "Given a map, transforms its keys using the (f key). If (f key) is nil,
@@ -224,7 +226,7 @@
                      :wait?        :wait
                      :wait-index   :waitIndex})
         (http-opts client)
-        (http/get (key-url client key))
+        (http/get (key-url client key (:root-key opts "keys")))
         parse)))
 
 (defn get
@@ -277,7 +279,7 @@
   ([client key value opts]
    (->> (assoc opts :value value)
         (http-opts client)
-        (http/put (key-url client key))
+        (http/put (key-url client key (:root-key opts "keys")))
         parse)))
 
 (defn create!*
@@ -286,7 +288,7 @@
   ([client path value opts]
    (->> (assoc opts :value value)
         (http-opts client)
-        (http/put (key-url client path))
+        (http/put (key-url client path (:root-key opts "keys")))
         parse)))
 
 (defn create!
@@ -315,7 +317,7 @@
         (remap-keys {:recursive?  :recursive
                      :dir?        :dir})
         (http-opts client)
-        (http/delete (key-url client key))
+        (http/delete (key-url client key (:root-key opts "keys")))
         parse)))
 
 (defn delete-all!
@@ -354,7 +356,7 @@
           (remap-keys {:prev-index  :prevIndex
                        :prev-exist? :prevExist})
           (http-opts client)
-          (http/put (key-url client key))
+          (http/put (key-url client key (:root-key opts "keys")))
           parse)
      (catch [:errorCode 101] _ false))))
 
@@ -379,7 +381,7 @@
           (remap-keys {:prev-value  :prevValue
                        :prev-exist? :prevExist})
           (http-opts client)
-          (http/put (key-url client key))
+          (http/put (key-url client key (:root-key opts "keys")))
           parse)
      (catch [:errorCode 101] _ false))))
 
