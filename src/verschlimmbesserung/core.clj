@@ -145,7 +145,7 @@
    :force-redirects       true ; Etcd uses 307 for side effects like PUT
    :socket-timeout        (or (:timeout opts) (:timeout client))
    :conn-timeout          (or (:timeout opts) (:timeout client))
-   :query-params          (dissoc opts :timeout)})
+   :query-params          (dissoc opts :timeout :root-key)})
 
 (defn parse-json
   "Parse an inputstream or string as JSON"
