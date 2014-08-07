@@ -313,7 +313,9 @@
   ([client key opts]
    (->> opts
         (remap-keys {:recursive?  :recursive
-                     :dir?        :dir})
+                     :dir?        :dir
+                     :prev-value  :prevValue
+                     :prev-index  :prevIndex})
         (http-opts client)
         (http/delete (key-url client key))
         parse)))
