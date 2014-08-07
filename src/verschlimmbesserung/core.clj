@@ -98,9 +98,9 @@
                    (str "Don't know how to interpret " (pr-str key)
                         " as key")))))
 (defn url
-  "The URL for a particular key.
+  "The URL for a key under a specified root-key.
 
-  (key-url client \"foo\") ; => \"http://127.0.0.1:4001/v2/keys/foo"
+  (url client \"keys\" \"foo\") ; => \"http://127.0.0.1:4001/v2/keys/foo"
   [client root-key key]
   (let [key  (encode-key key)
         path (if (and (pos? (.length key))
