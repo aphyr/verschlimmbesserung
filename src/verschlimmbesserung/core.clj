@@ -336,7 +336,7 @@
 (defn cas!
   "Compare and set based on the current value. Updates key to be value' iff the
   current value of key is value. Optionally, you may also constrain the
-  previous index and/or the existence of the key. Throws for CAS failure.
+  previous index and/or the existence of the key. Returns false for CAS failure.
   Options:
 
   :timeout
