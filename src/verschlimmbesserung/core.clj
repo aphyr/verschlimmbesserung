@@ -67,54 +67,69 @@
   [client]
   (str (:endpoint client) "/" api-version))
 
-(defn ^String encode-key
-  "String, symbol, and keyword keys map to their names; e.g. \"foo\", :foo, and
-  'foo are equivalent. All keys are url-encoded *except* for the forward slash,
-  which is a path separator in Raft. Sequences like ['foo 'bar 'baz] have each
-  component url-encoded and joined by slashes.
+(defn decompose-string
+  "Splits a string on slashes, ignoring any leading slash."
+  [s]
+  (let [s (if (.startsWith s "/") (subs s 1) s)]
+    (str/split s #"/")))
 
-  Numbers map to (str num). Nils map to the empty string; e.g. the root."
+(defn ^String normalise-key-element
+  "String, symbol, and keyword keys map to their names;
+  e.g. \"foo\", :foo, and 'foo are equivalent.
+
+  Numbers map to (str num)."
   [key]
   (cond
-    (nil? key) ""
-
-    (instance? String key)
-    (if (re-find #"/" key)
-      (->> (str/split key #"/")
-           (map http.util/url-encode)
-           (str/join "/"))
-      (http.util/url-encode key))
-
-    (instance? clojure.lang.Named key)
-    (recur (name key))
-
-    (number? key)
-    (recur (str key))
-
-    (sequential? key)
-    (str/join "/" (map encode-key key))
-
+    (string? key) (if (re-find #"/" key)
+                    (decompose-string key)
+                    [key])
+    (instance? clojure.lang.Named key) [(name key)]
+    (number? key) [(str key)]
     :else (throw (IllegalArgumentException.
                    (str "Don't know how to interpret " (pr-str key)
                         " as key")))))
-(defn url
+
+(defn normalise-key
+  "Return the key as a sequence of key elements.  A key can be
+  specified as a string, symbol, keyword or sequence thereof.
+  A nil key maps to [\"\"], the root."
+  [key]
+  (cond
+   (nil? key) [""]
+   (sequential? key) (mapcat normalise-key-element key)
+   (string? key) (decompose-string key)
+   :else (normalise-key-element key)))
+
+(defn prefix-key
+  "For a given key, return a key sequence, prefixed with the given key element."
+  [prefix key]
+  (concat [prefix] (normalise-key key)))
+
+(defn ^String encode-key-seq
+  "Return a url-encoded key string for a key sequence."
+  [key-seq]
+  (str/join "/" (map http.util/url-encode key-seq)))
+
+;; str(if (<= (count key-seq) 1) "/")
+
+(defn ^String encode-key
+  "Return a url-encoded key string for a key."
+  [k]
+  (encode-key-seq (normalise-key k)))
+
+(defn ^String url
   "The URL for a key under a specified root-key.
 
-  (url client \"keys\" \"foo\") ; => \"http://127.0.0.1:4001/v2/keys/foo"
-  [client root-key key]
-  (let [key  (encode-key key)
-        path (if (and (pos? (.length key))
-                      (= \/ (.charAt key 0)))
-               (str "/" root-key key)
-               (str "/" root-key "/" key))]
-    (str (base-url client) path)))
+  (url client [\"keys\" \"foo\"]) ; => \"http://127.0.0.1:4001/v2/keys/foo"
+  [client key-seq]
+  (str (base-url client) "/" (encode-key-seq key-seq)))
 
 (defn key-url
   "The URL for a particular key.
 
   (key-url client \"foo\") ; => \"http://127.0.0.1:4001/v2/keys/foo"
   [client key]
-  (url client "keys" key))
+  (url client (prefix-key "keys" key)))
 
 (defn remap-keys
   "Given a map, transforms its keys using the (f key). If (f key) is nil,
@@ -230,7 +245,7 @@
                      :wait?        :wait
                      :wait-index   :waitIndex})
         (http-opts client)
-        (http/get (url client (:root-key opts "keys") key))
+        (http/get (url client (prefix-key (:root-key opts "keys") key)))
         parse)))
 
 (defn get
@@ -283,7 +298,7 @@
   ([client key value opts]
    (->> (assoc opts :value value)
         (http-opts client)
-        (http/put (url client (:root-key opts "keys") key))
+        (http/put (url client (prefix-key (:root-key opts "keys") key)))
         parse)))
 
 (defn create!*
@@ -292,7 +307,7 @@
   ([client path value opts]
    (->> (assoc opts :value value)
         (http-opts client)
-        (http/put (url client (:root-key opts "keys") path))
+        (http/put (url client (prefix-key (:root-key opts "keys") path)))
         parse)))
 
 (defn create!
@@ -321,7 +336,7 @@
         (remap-keys {:recursive?  :recursive
                      :dir?        :dir})
         (http-opts client)
-        (http/delete (url client (:root-key opts "keys") key))
+        (http/delete (url client (prefix-key (:root-key opts "keys") key)))
         parse)))
 
 (defn delete-all!
@@ -360,7 +375,7 @@
           (remap-keys {:prev-index  :prevIndex
                        :prev-exist? :prevExist})
           (http-opts client)
-          (http/put (url client (:root-key opts "keys") key))
+          (http/put (url client (prefix-key (:root-key opts "keys") key)))
           parse)
      (catch [:errorCode 101] _ false))))
 
@@ -385,7 +400,7 @@
           (remap-keys {:prev-value  :prevValue
                        :prev-exist? :prevExist})
           (http-opts client)
-          (http/put (url client (:root-key opts "keys") key))
+          (http/put (url client (prefix-key (:root-key opts "keys") key)))
           parse)
      (catch [:errorCode 101] _ false))))
 
