@@ -70,7 +70,7 @@
 (deftest create-test!
   (let [r (str (rand))
         k (v/create! c :rand r)]
-    (is (re-find #"^/rand/\d+$" k))
+    (is (= "/rand" k))
     (is (= r (v/get c k)))))
 
 (deftest cas-test!
