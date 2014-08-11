@@ -182,7 +182,9 @@
        ; etcd is quite helpful with its error messages, so we just use the body
        ; as JSON if possible.
        (try (let [body# (parse-json ~'body)]
-              (throw+ (assoc body# :status ~'status)))
+              (throw+ (cond (string? body#) {:message body# :status ~'status}
+                            (map? body#) (assoc body# :status ~'status)
+                            :else {:body body# :status ~'status})))
             (catch JsonParseException _#
               (throw+ e#))))))
 
