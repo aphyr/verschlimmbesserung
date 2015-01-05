@@ -243,6 +243,7 @@
    (->> opts
         (remap-keys {:recursive?   :recursive
                      :consistent?  :consistent
+                     :quorum?      :quorum
                      :sorted?      :sorted
                      :wait?        :wait
                      :wait-index   :waitIndex})
@@ -277,6 +278,7 @@
 
   :recursive?
   :consistent?
+  :quorum?
   :sorted?
   :wait?
   :wait-index
